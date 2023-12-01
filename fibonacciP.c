@@ -1,16 +1,26 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <omp.h>
 
-void fibonacci_parallel(int n, int *fib_series) {
-    int i;
-    fib_series[0] = 0;
-    fib_series[1] = 1;
-
-    #pragma omp parallel for
-    for (i = 2; i <= n; i++) {
-        // Cálculo paralelo con dependencias manejadas adecuadamente
-        fib_series[i] = fib_series[i-1] + fib_series[i-2];
+int fib(int n, int *memo) {
+    if (n <= 1) {
+        return n;
     }
+
+    if (memo[n] != -1) {
+        return memo[n];
+    }
+
+    int i, j;
+
+    #pragma omp task shared(i) firstprivate(n, memo)
+    i = fib(n - 1, memo);
+
+    #pragma omp task shared(j) firstprivate(n, memo)
+    j = fib(n - 2, memo);
+
+    #pragma omp taskwait
+    return memo[n] = i + j;
 }
 
 int main(int argc, char *argv[]) {
@@ -21,16 +31,27 @@ int main(int argc, char *argv[]) {
 
     int n = atoi(argv[1]);
     int num_threads = atoi(argv[2]);
+    int *memo = malloc((n + 1) * sizeof(int));
+    for (int i = 0; i <= n; ++i) {
+        memo[i] = -1;
+    }
 
-    omp_set_num_threads(num_threads); // Establecer el número de hilos
-
-    int fib_series[n+1];
+    omp_set_num_threads(num_threads);
 
     double start_time = omp_get_wtime();
-    fibonacci_parallel(n, fib_series);
+    
+    #pragma omp parallel
+    {
+        #pragma omp single
+        //printf("Fibonacci de %d es %d\n", n, fib(n, memo));
+        printf(" ");
+    }
+    
     double end_time = omp_get_wtime();
 
-    printf("%d, %d, %f\n", n, num_threads, end_time - start_time); // Imprime n, num_threads y tiempo
+    free(memo);
+
+    printf("%d, %d, %f\n", n, num_threads, end_time - start_time);
 
     return 0;
 }
