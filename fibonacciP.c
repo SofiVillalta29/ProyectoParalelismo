@@ -39,19 +39,19 @@ int main(int argc, char *argv[]) {
     omp_set_num_threads(num_threads);
 
     double start_time = omp_get_wtime();
-    
+    int fibonacci_result;
     #pragma omp parallel
     {
         #pragma omp single
-        //printf("Fibonacci de %d es %d\n", n, fib(n, memo));
-        printf(" ");
+        fibonacci_result = fib(n, memo);
+        //printf(" ");
     }
     
     double end_time = omp_get_wtime();
 
     free(memo);
 
-    printf("%d, %d, %f\n", n, num_threads, end_time - start_time);
-
+    printf("%d,%d,%f\n", n, num_threads, end_time - start_time); 
+    
     return 0;
 }
